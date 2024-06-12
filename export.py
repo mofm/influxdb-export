@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from influxdb_client import InfluxDBClient
 import configparser
 import ast
@@ -28,6 +28,12 @@ my_bucket = config['INFLUXDB']['bucket']
 time_range_days = config['INFLUXDB']['time_range_days']
 time_range_hours = config['INFLUXDB']['time_range_hours']
 my_window_period = config['INFLUXDB']['window_period']
+
+# Check if time_range_days and time_range_hours are not empty
+if not time_range_days or not time_range_hours:
+    logging.error("The 'time_range_days' and 'time_range_hours' keys must not be empty in the 'INFLUXDB' section of "
+                  "the config.ini file.")
+    sys.exit(1)
 
 # Convert filtered_fields from string to list of dictionaries
 filtered_fields_str = config['INFLUXDB']['filtered_fields']
@@ -145,8 +151,8 @@ class QueryGenerator:
         if days < 0 or hours < 0:
             raise ValueError("Days and hours must be non-negative integers.")
         time_delta = timedelta(days=int(days), hours=int(hours))
-        self.params['timeRangeStart'] = datetime.now() - time_delta
-        self.params['timeRangeStop'] = datetime.now()
+        self.params['timeRangeStart'] = datetime.now(timezone.utc) - time_delta
+        self.params['timeRangeStop'] = datetime.now(timezone.utc)
 
     def set_window_period(self, window_period):
         """
